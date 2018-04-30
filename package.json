@@ -1,5 +1,5 @@
 {
-  "name": "webpack-package",
+  "name": "rss-reader",
   "version": "0.0.1",
   "description": "",
   "scripts": {
@@ -14,14 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hexlet-boilerplates/webpack-package.git"
+    "url": "git+https://github.com/Rende11/project-lvl3-s234.git"
   },
-  "author": "Kirill Mokevnin",
+  "author": "Rende11",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/hexlet-boilerplates/webpack-package/issues"
+    "url": "https://github.com/Rende11/project-lvl3-s234/issues"
   },
-  "homepage": "https://github.com/hexlet-boilerplates/webpack-package#readme",
+  "homepage": "https://github.com/Rende11/project-lvl3-s234#readme",
   "dependencies": {},
   "devDependencies": {
     "babel-eslint": "^8.2.2",
