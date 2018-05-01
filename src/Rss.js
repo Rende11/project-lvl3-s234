@@ -37,14 +37,17 @@ export default class Rss {
   }
 
   handlingDoc = (doc) => {
-    const titles = [...doc.querySelectorAll('item > title')].map(node => node.textContent);
-    const links = [...doc.querySelectorAll('item > link')].map(node => node.textContent);
-    const descs = [...doc.querySelectorAll('item > description')].map(node => node.textContent);
-    const zipped = _.zip(titles, links, descs);
-    return zipped.map((item) => {
-      const [title, link, desc] = item;
-      return ({ title, link, desc });
-    }).filter(item => item.title && item.link && item.desc);
+    const newsItems = [...doc.querySelectorAll('item')];
+
+    const preparedNews = newsItems.map((item) => {
+      const title = item.querySelector('title');
+      const link = item.querySelector('link');
+      const desc = item.querySelector('description');
+      return title && link && desc ?
+        { title: title.textContent, link: link.textContent, desc: desc.textContent } : null;
+    }).filter(item => !!item);
+
+    return preparedNews;
   }
 
   init() {
