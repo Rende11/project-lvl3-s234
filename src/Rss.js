@@ -5,7 +5,7 @@ import validator from 'validator';
 
 export default class Rss {
   constructor(element) {
-    this.proxy = "https://cors-anywhere.herokuapp.com/";
+    this.proxy = 'https://cors-anywhere.herokuapp.com/';
     this.element = element;
     this.storage = [];
     this.feeds = [];
@@ -21,28 +21,27 @@ export default class Rss {
       input.classList.remove('is-invalid');
       this.storage.push(linkInput);
       input.value = '';
-      
+
       axios.get(this.proxy + linkInput)
-        .then(data => {
+        .then((data) => {
           const parser = new DOMParser();
-          const doc = parser.parseFromString(data.data, "application/xml");
+          const doc = parser.parseFromString(data.data, 'application/xml');
           this.feeds.push(doc);
           this.drawRsslist();
         })
-        .catch(err => {
-          console.log(err);
+        .catch((err) => {
+          console.error(err);
           input.classList.add('is-invalid');
         });
-      
     }
   }
 
-  handlingDoc(doc) {
-    const titles = [...doc.querySelectorAll("item > title")].map(node => node.textContent);
-    const links = [...doc.querySelectorAll("link")].map(node => node.textContent);
-    const descs = [...doc.querySelectorAll("description")].map(node => node.textContent);
+  handlingDoc = (doc) => {
+    const titles = [...doc.querySelectorAll('item > title')].map(node => node.textContent);
+    const links = [...doc.querySelectorAll('item > link')].map(node => node.textContent);
+    const descs = [...doc.querySelectorAll('item > description')].map(node => node.textContent);
     const zipped = _.zip(titles, links, descs);
-    return zipped.map(item => {
+    return zipped.map((item) => {
       const [title, link, desc] = item;
       return ({ title, link, desc });
     }).filter(item => item.title && item.link && item.desc);
@@ -81,12 +80,12 @@ export default class Rss {
     }
   }
 
-  convertFeed(parsedFeed) {
+  convertFeed = (parsedFeed) => {
     const items = parsedFeed.map(el => `<a href="${el.link}" class="list-group-item list-group-item-action">${el.title}</a>`).join('');
     return `<div class="list-group" id="list">${items}</div>`;
   }
 
   validateInput(url) {
-    return url.includes("localhost") || validator.isURL(url) && !this.storage.includes(url);
+    return (url.includes('localhost') || (validator.isURL(url) && !this.storage.includes(url)));
   }
 }
