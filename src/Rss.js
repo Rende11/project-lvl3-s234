@@ -1,11 +1,14 @@
 // @flow
 import _ from 'lodash';
+import axios from 'axios';
 import validator from 'validator';
 
 export default class Rss {
   constructor(element) {
+    this.proxy = "https://cors-anywhere.herokuapp.com/";
     this.element = element;
     this.storage = [];
+    this.feeds = [];
   }
 
   handleOnSubmit = (e) => {
@@ -15,11 +18,34 @@ export default class Rss {
     if (!this.validateInput(linkInput)) {
       input.classList.add('is-invalid');
     } else {
-      input.classList.toggle('is-invalid');
+      input.classList.remove('is-invalid');
       this.storage.push(linkInput);
       input.value = '';
-      this.drawList();
+      
+      axios.get(this.proxy + linkInput)
+        .then(data => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(data.data, "application/xml");
+          this.feeds.push(doc);
+          this.drawRsslist();
+        })
+        .catch(err => {
+          console.log(err);
+          input.classList.add('is-invalid');
+        });
+      
     }
+  }
+
+  handlingDoc(doc) {
+    const titles = [...doc.querySelectorAll("item > title")].map(node => node.textContent);
+    const links = [...doc.querySelectorAll("link")].map(node => node.textContent);
+    const descs = [...doc.querySelectorAll("description")].map(node => node.textContent);
+    const zipped = _.zip(titles, links, descs);
+    return zipped.map(item => {
+      const [title, link, desc] = item;
+      return ({ title, link, desc });
+    }).filter(item => item.title && item.link && item.desc);
   }
 
   init() {
@@ -34,10 +60,11 @@ export default class Rss {
             <button class="btn btn-outline-secondary" type="submit">Go!</button>
           </div>
           <div class="invalid-feedback">
-            Invalid or already used url
+            Invalid or already used url - request failed
           </div>
         </div>
       </form>
+      <div id="rss-list">
     </div>`;
 
     const form = this.element.querySelector('form');
@@ -45,23 +72,21 @@ export default class Rss {
     form.addEventListener('submit', this.handleOnSubmit);
   }
 
-  drawList() {
-    if (this.storage.length > 0) {
-      const items = this.storage.map(el => `<a href="#" class="list-group-item list-group-item-action">${el}</a>`).join('');
-      const root = this.element.querySelector('#list');
-      if (root) {
-        root.innerHTML = items;
-      } else {
-        const rootNode = `
-          <div class="list-group" id="list">
-            ${items}
-          </div>`;
-        this.element.querySelector('#form').insertAdjacentHTML('beforeend', rootNode);
-      }
+  drawRsslist() {
+    if (this.feeds.length > 0) {
+      const parsed = this.feeds.map(feed => this.handlingDoc(feed));
+      const converted = parsed.map(parsedFeed => this.convertFeed(parsedFeed));
+      const htmlFeed = _.flatten(converted).reverse().join('<hr />');
+      this.element.querySelector('#rss-list').innerHTML = htmlFeed;
     }
   }
 
+  convertFeed(parsedFeed) {
+    const items = parsedFeed.map(el => `<a href="${el.link}" class="list-group-item list-group-item-action">${el.title}</a>`).join('');
+    return `<div class="list-group" id="list">${items}</div>`;
+  }
+
   validateInput(url) {
-    return validator.isURL(url) && !this.storage.includes(url);
+    return url.includes("localhost") || validator.isURL(url) && !this.storage.includes(url);
   }
 }
