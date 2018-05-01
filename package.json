@@ -23,9 +23,12 @@
   },
   "homepage": "https://github.com/Rende11/project-lvl3-s234#readme",
   "dependencies": {
+    "axios": "^0.18.0",
     "bootstrap": "*",
     "jquery": "^3.3.1",
-    "popper.js": "^1.14.3"
+    "lodash": "^4.17.10",
+    "popper.js": "^1.14.3",
+    "validator": "^9.4.1"
   },
   "devDependencies": {
     "babel-eslint": "^8.2.2",
