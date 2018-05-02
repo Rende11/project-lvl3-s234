@@ -32,15 +32,15 @@ export default class Rss {
     const { linkInput } = _.fromPairs([...new FormData(e.target)]);
     const input = document.getElementById('link');
     if (!this.validateInput(linkInput)) {
-      this.stateChanger.failed(input, "Validation error - empty input, invalid or already used url");
+      this.stateChanger.failed(input, 'Validation error - empty input, invalid or already used url');
     } else {
-      this.stateChanger.success(input, "Looks good - wait for download");
+      this.stateChanger.success(input, 'Looks good - wait for download');
       axios.get(`${this.proxy}/${linkInput}`)
         .then((data) => {
           const parser = new DOMParser();
           const doc = parser.parseFromString(data.data, 'application/xml');
           const parsedNews = this.handlingDoc(doc);
-          
+
           if (parsedNews.length === 0) {
             this.stateChanger.failed(input, "Can't parse news from this url");
           } else {
@@ -56,7 +56,7 @@ export default class Rss {
         })
         .catch((err) => {
           console.error(err);
-          this.stateChanger.failed(input, "Request failed");
+          this.stateChanger.failed(input, 'Request failed');
         });
     }
   }
@@ -70,7 +70,13 @@ export default class Rss {
       const link = item.querySelector('link');
       const desc = item.querySelector('description');
       return title && link && desc ?
-        { feedName: feedName.textContent, feedLink: feedLink.textContent, title: title.textContent, link: link.textContent, desc: desc.textContent } : null;
+        {
+          feedName: feedName.textContent,
+          feedLink: feedLink.textContent,
+          title: title.textContent,
+          link: link.textContent,
+          desc: desc.textContent,
+        } : null;
     }).filter(item => !!item);
 
     return preparedNews;
@@ -114,8 +120,8 @@ export default class Rss {
     const { feedName, feedLink } = objFeed[0];
     const items = objFeed.map(el => `<a href="${el.link}" class="list-group-item list-group-item-action">${el.title}</a>`).join('');
     return `<div class="list-group" id="list">
-              <a href="${feedLink ? feedLink : '#'}" class="list-group-item list-group-item-action active">
-              ${feedName ? feedName : 'Unknown feed'}</a>${items}</div>`;
+              <a href="${feedLink || '#'}" class="list-group-item list-group-item-action active">
+              ${feedName || 'Unknown feed'}</a>${items}</div>`;
   }
 
   validateInput(url) {
