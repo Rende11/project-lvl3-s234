@@ -10,14 +10,16 @@ export default class Rss {
     this.newsFeed = [];
   }
 
-  stateChange = {
-    failed: (el) => {
+  stateChanger = {
+    failed: (el, message) => {
       el.classList.add('is-invalid');
       el.classList.remove('is-valid');
+      document.getElementById('invalid-message').textContent = message;
     },
-    success: (el) => {
+    success: (el, message) => {
       el.classList.remove('is-invalid');
       el.classList.add('is-valid');
+      document.getElementById('valid-message').textContent = message;
     },
     neutral: (el) => {
       el.classList.remove('is-invalid');
@@ -30,44 +32,45 @@ export default class Rss {
     const { linkInput } = _.fromPairs([...new FormData(e.target)]);
     const input = document.getElementById('link');
     if (!this.validateInput(linkInput)) {
-      this.stateChange.failed(input);
+      this.stateChanger.failed(input, "Validation error - empty input, invalid or already used url");
     } else {
-      this.stateChange.success(input);
+      this.stateChanger.success(input, "Looks good - wait for download");
       axios.get(`${this.proxy}/${linkInput}`)
         .then((data) => {
           const parser = new DOMParser();
           const doc = parser.parseFromString(data.data, 'application/xml');
-
           const parsedNews = this.handlingDoc(doc);
-
+          
           if (parsedNews.length === 0) {
-            throw new Error("Can't parse news from this url");
+            this.stateChanger.failed(input, "Can't parse news from this url");
+          } else {
+            this.newsFeed.push({
+              url: linkInput,
+              news: parsedNews,
+            });
+
+            this.drawRsslist();
+            input.value = '';
+            this.stateChanger.neutral(input);
           }
-
-          this.newsFeed.push({
-            url: linkInput,
-            news: parsedNews,
-          });
-
-          this.drawRsslist();
-          input.value = '';
-          this.stateChange.neutral(input);
         })
         .catch((err) => {
           console.error(err);
-          this.stateChange.failed(input);
+          this.stateChanger.failed(input, "Request failed");
         });
     }
   }
 
   handlingDoc = (doc) => {
+    const feedName = doc.querySelector('title');
+    const feedLink = doc.querySelector('link');
     const newsItems = [...doc.querySelectorAll('item')];
     const preparedNews = newsItems.map((item) => {
       const title = item.querySelector('title');
       const link = item.querySelector('link');
       const desc = item.querySelector('description');
       return title && link && desc ?
-        { title: title.textContent, link: link.textContent, desc: desc.textContent } : null;
+        { feedName: feedName.textContent, feedLink: feedLink.textContent, title: title.textContent, link: link.textContent, desc: desc.textContent } : null;
     }).filter(item => !!item);
 
     return preparedNews;
@@ -84,10 +87,10 @@ export default class Rss {
           <div class="input-group-append">
             <button class="btn btn-outline-secondary" type="submit">Go!</button>
           </div>
-          <div class="invalid-feedback">
+          <div class="invalid-feedback" id="invalid-message">
             Invalid or already used url - request failed
           </div>
-          <div class="valid-feedback">
+          <div class="valid-feedback" id="valid-message">
             Looks good - wait for the download
           </div>
         </div>
@@ -108,8 +111,11 @@ export default class Rss {
     }
   }
   convertFeed = (objFeed) => {
+    const { feedName, feedLink } = objFeed[0];
     const items = objFeed.map(el => `<a href="${el.link}" class="list-group-item list-group-item-action">${el.title}</a>`).join('');
-    return `<div class="list-group" id="list">${items}</div>`;
+    return `<div class="list-group" id="list">
+              <a href="${feedLink ? feedLink : '#'}" class="list-group-item list-group-item-action active">
+              ${feedName ? feedName : 'Unknown feed'}</a>${items}</div>`;
   }
 
   validateInput(url) {
