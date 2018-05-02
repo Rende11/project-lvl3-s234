@@ -36,6 +36,12 @@ export default class Rss {
     }
   }
 
+  handleOnClick = (e) => {
+    if (e.target.dataset.type === "modal-button") {
+      e.preventDefault();
+    }
+  }
+
   handlingDoc = (doc) => {
     const newsItems = [...doc.querySelectorAll('item')];
 
@@ -70,8 +76,10 @@ export default class Rss {
     </div>`;
 
     const form = this.element.querySelector('form');
+    const rss = this.element.querySelector('#rss-list');
 
     form.addEventListener('submit', this.handleOnSubmit);
+    rss.addEventListener('click', this.handleOnClick);
   }
 
   drawRsslist() {
@@ -84,7 +92,13 @@ export default class Rss {
   }
 
   convertFeed = (parsedFeed) => {
-    const items = parsedFeed.map(el => `<a href="${el.link}" class="list-group-item list-group-item-action">${el.title}</a>`).join('');
+    const items = parsedFeed.map(el => 
+      `<a href="${el.link}" class="list-group-item list-group-item-action clearfix">
+        ${el.title}
+        <span class="float-right">
+          <button class="btn btn-xs btn-default" data-type="modal-button">Show description</button>
+        </span>
+      </a>`).join('');
     return `<div class="list-group" id="list">${items}</div>`;
   }
 
