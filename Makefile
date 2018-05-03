@@ -22,6 +22,9 @@ check-types:
 lint:
 	npm run eslint .
 
+lint-fix:
+	npm run eslint . -- --fix
+
 publish:
 	npm publish
 
