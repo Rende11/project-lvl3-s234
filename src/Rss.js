@@ -111,6 +111,7 @@ export default class Rss {
     </div>`;
 
     const form = document.getElementById('feed-form');
+    const rss = document.getElementById('rss-list');
 
     form.addEventListener('submit', this.handleOnSubmit);
     rss.addEventListener('click', this.handleOnClick);
@@ -125,7 +126,12 @@ export default class Rss {
   }
   convertFeed = (objFeed) => {
     const { feedName, feedLink } = objFeed[0];
-    const items = objFeed.map(el => `<a href="${el.link}" class="list-group-item list-group-item-action">${el.title}</a>`).join('');
+    const items = objFeed.map(el => `<a href="${el.link}" class="list-group-item list-group-item-action">
+        ${el.title}
+        <span class="float-right">
+          <button type="button" class="btn btn-outline-secondary">Show description</button>
+        </span>
+      </a>`).join('');
     return `<div class="list-group" id="list">
               <a href="${feedLink || '#'}" class="list-group-item list-group-item-action active">
               ${feedName || 'Unknown feed'}</a>${items}</div>`;
