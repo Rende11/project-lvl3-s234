@@ -1,3 +1,5 @@
 import getModal from './modal';
+import getForm from './form';
 
-export default  getModal;
+
+export { getModal, getForm };

@@ -1,10 +1,13 @@
 // @flow
-import getModal  from './templates';
+import { getModal, getForm }  from './templates';
+import { stateChanger } from './utils';
+import { handlingDoc } from './feedParser';
+
 import _ from 'lodash';
 import axios from 'axios';
 import validator from 'validator';
 import $ from 'jquery';
-import uuid from 'uuid/v1';
+
 
 export default class Rss {
   constructor(element) {
@@ -13,39 +16,24 @@ export default class Rss {
     this.newsFeed = [];
   }
 
-  stateChanger = {
-    failed: (el, message) => {
-      el.classList.add('is-invalid');
-      el.classList.remove('is-valid');
-      document.getElementById('invalid-message').textContent = message;
-    },
-    success: (el, message) => {
-      el.classList.remove('is-invalid');
-      el.classList.add('is-valid');
-      document.getElementById('valid-message').textContent = message;
-    },
-    neutral: (el) => {
-      el.classList.remove('is-invalid');
-      el.classList.remove('is-valid');
-    },
-  }
-
+  
   handleOnSubmit = (e) => {
     e.preventDefault();
     const { linkInput } = _.fromPairs([...new FormData(e.target)]);
     const input = document.getElementById('link');
+
     if (!this.validateInput(linkInput)) {
-      this.stateChanger.failed(input, 'Validation error - empty input, invalid or already used url');
+      stateChanger.failed(input, 'Validation error - empty input, invalid or already used url');
     } else {
-      this.stateChanger.success(input, 'Looks good - wait for download');
+      stateChanger.success(input, 'Looks good - wait for download');
       axios.get(`${this.proxy}/${linkInput}`)
         .then((data) => {
           const parser = new DOMParser();
           const doc = parser.parseFromString(data.data, 'application/xml');
-          const parsedNews = this.handlingDoc(doc);
+          const parsedNews = handlingDoc(doc);
 
           if (parsedNews.length === 0) {
-            this.stateChanger.failed(input, "Can't parse news from this url");
+            stateChanger.failed(input, "Can't parse news from this url");
           } else {
             this.newsFeed.push({
               url: linkInput,
@@ -54,75 +42,31 @@ export default class Rss {
 
             this.drawRsslist();
             input.value = '';
-            this.stateChanger.neutral(input);
+            stateChanger.neutral(input);
           }
         })
         .catch((err) => {
           console.error(err);
-          this.stateChanger.failed(input, 'Request failed');
+          stateChanger.failed(input, 'Request failed');
         });
     }
   }
 
   getNewsById = (id) => _.find(_.flatten(this.newsFeed.map(feed => feed.news)), { id });
 
-  handlingDoc = (doc) => {
-    const feedName = doc.querySelector('title');
-    const feedLink = doc.querySelector('link');
-    const newsItems = [...doc.querySelectorAll('item')];
-    const preparedNews = newsItems.map((item) => {
-      const title = item.querySelector('title');
-      const link = item.querySelector('link');
-      const desc = item.querySelector('description');
-      return title && link && desc ?
-        {
-          id: uuid(),
-          feedName: feedName.textContent,
-          feedLink: feedLink.textContent,
-          title: title.textContent,
-          link: link.textContent,
-          desc: desc.textContent,
-        } : null;
-    }).filter(item => !!item);
-
-    return preparedNews;
-  }
-
   init() {
-    this.element.innerHTML =
-
-    `<div id="form">
-      <form id="feed-form">
-        <div class="input-group mb-3">
-          <input type="text" id="link" name="linkInput" class="form-control"
-            placeholder="rss link" aria-label="rss link" aria-describedby="basic-addon2">
-          <div class="input-group-append">
-            <button class="btn btn-outline-secondary" type="submit">Go!</button>
-          </div>
-          <div class="invalid-feedback" id="invalid-message">
-            Invalid or already used url - request failed
-          </div>
-          <div class="valid-feedback" id="valid-message">
-            Looks good - wait for the download
-          </div>
-        </div>
-      </form>
-      <div id="rss-list">
-    </div>`;
-
+    this.element.innerHTML = getForm();
     const form = document.getElementById('feed-form');
-    
-
     form.addEventListener('submit', this.handleOnSubmit);
-    
   }
 
   drawRsslist() {
     if (this.newsFeed.length > 0) {
       const converted = this.newsFeed.map(feed => this.convertFeed(feed.news));
       const htmlFeed = converted.reverse().join('<hr />');
-      document.getElementById('rss-list').innerHTML = htmlFeed;
-      document.getElementById('rss-list').insertAdjacentHTML('beforeend', getModal());
+      const rssList = document.getElementById('rss-list');
+      rssList.innerHTML = htmlFeed;
+      rssList.insertAdjacentHTML('beforeend', getModal());
       
       $('[data-toggle="modal"]').on('click', (e) => {
         e.preventDefault();
@@ -135,9 +79,11 @@ export default class Rss {
         const modal = $(e.currentTarget);
         modal.find('.modal-title').text(article.title);
         modal.find('.modal-body').text(article.desc);
+        modal.find('a').attr("href", article.link);
       })
     }
   }
+
   convertFeed = (objFeed) => {
     const { feedName, feedLink } = objFeed[0];
     const items = objFeed.map(el => 

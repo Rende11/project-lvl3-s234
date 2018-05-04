@@ -13,6 +13,7 @@ export default () => {
         <div class="modal-body">
         </div>
         <div class="modal-footer">
+          <a href="#">Go to original</a>
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
         </div>
       </div>
