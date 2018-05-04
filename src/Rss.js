@@ -1,7 +1,10 @@
 // @flow
+import getModal  from './templates';
 import _ from 'lodash';
 import axios from 'axios';
 import validator from 'validator';
+import $ from 'jquery';
+import uuid from 'uuid/v1';
 
 export default class Rss {
   constructor(element) {
@@ -61,11 +64,7 @@ export default class Rss {
     }
   }
 
-  handleOnClick = (e) => {
-    if (e.target.dataset.type === "modal-button") {
-      e.preventDefault();
-    }
-  }
+  getNewsById = (id) => _.find(_.flatten(this.newsFeed.map(feed => feed.news)), { id });
 
   handlingDoc = (doc) => {
     const feedName = doc.querySelector('title');
@@ -77,6 +76,7 @@ export default class Rss {
       const desc = item.querySelector('description');
       return title && link && desc ?
         {
+          id: uuid(),
           feedName: feedName.textContent,
           feedLink: feedLink.textContent,
           title: title.textContent,
@@ -111,10 +111,10 @@ export default class Rss {
     </div>`;
 
     const form = document.getElementById('feed-form');
-    const rss = document.getElementById('rss-list');
+    
 
     form.addEventListener('submit', this.handleOnSubmit);
-    rss.addEventListener('click', this.handleOnClick);
+    
   }
 
   drawRsslist() {
@@ -122,16 +122,34 @@ export default class Rss {
       const converted = this.newsFeed.map(feed => this.convertFeed(feed.news));
       const htmlFeed = converted.reverse().join('<hr />');
       document.getElementById('rss-list').innerHTML = htmlFeed;
+      document.getElementById('rss-list').insertAdjacentHTML('beforeend', getModal());
+      
+      $('[data-toggle="modal"]').on('click', (e) => {
+        e.preventDefault();
+      });
+      
+      $('#exampleModal').on('show.bs.modal', (e) => {
+        const button = $(e.relatedTarget)
+        const articleId = button.data('article-id');
+        const article = this.getNewsById(articleId);
+        const modal = $(e.currentTarget);
+        modal.find('.modal-title').text(article.title);
+        modal.find('.modal-body').text(article.desc);
+      })
     }
   }
   convertFeed = (objFeed) => {
     const { feedName, feedLink } = objFeed[0];
-    const items = objFeed.map(el => `<a href="${el.link}" class="list-group-item list-group-item-action">
+    const items = objFeed.map(el => 
+      `<a href="${el.link}" class="list-group-item list-group-item-action">
         ${el.title}
         <span class="float-right">
-          <button type="button" class="btn btn-outline-secondary">Show description</button>
+          <button type="button" class="btn btn-outline-secondary" data-article-id="${el.id}" data-toggle="modal" data-target="#exampleModal">
+            Show description
+          </button>
         </span>
       </a>`).join('');
+      
     return `<div class="list-group" id="list">
               <a href="${feedLink || '#'}" class="list-group-item list-group-item-action active">
               ${feedName || 'Unknown feed'}</a>${items}</div>`;
