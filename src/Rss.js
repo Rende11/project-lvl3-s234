@@ -1,13 +1,12 @@
 // @flow
-import { getModal, getForm }  from './templates';
-import { stateChanger } from './utils';
-import { handlingDoc } from './feedParser';
-
 import _ from 'lodash';
 import axios from 'axios';
 import validator from 'validator';
 import $ from 'jquery';
 
+import { getModal, getForm } from './templates';
+import stateChanger from './utils';
+import handlingDoc from './feedParser';
 
 export default class Rss {
   constructor(element) {
@@ -16,7 +15,7 @@ export default class Rss {
     this.newsFeed = [];
   }
 
-  
+
   handleOnSubmit = (e) => {
     e.preventDefault();
     const { linkInput } = _.fromPairs([...new FormData(e.target)]);
@@ -52,7 +51,7 @@ export default class Rss {
     }
   }
 
-  getNewsById = (id) => _.find(_.flatten(this.newsFeed.map(feed => feed.news)), { id });
+  getNewsById = id => _.find(_.flatten(this.newsFeed.map(feed => feed.news)), { id });
 
   init() {
     this.element.innerHTML = getForm();
@@ -67,26 +66,26 @@ export default class Rss {
       const rssList = document.getElementById('rss-list');
       rssList.innerHTML = htmlFeed;
       rssList.insertAdjacentHTML('beforeend', getModal());
-      
+
       $('[data-toggle="modal"]').on('click', (e) => {
         e.preventDefault();
       });
-      
+
       $('#exampleModal').on('show.bs.modal', (e) => {
-        const button = $(e.relatedTarget)
+        const button = $(e.relatedTarget);
         const articleId = button.data('article-id');
         const article = this.getNewsById(articleId);
         const modal = $(e.currentTarget);
         modal.find('.modal-title').text(article.title);
         modal.find('.modal-body').text(article.desc);
-        modal.find('a').attr("href", article.link);
-      })
+        modal.find('a').attr('href', article.link);
+      });
     }
   }
 
   convertFeed = (objFeed) => {
     const { feedName, feedLink } = objFeed[0];
-    const items = objFeed.map(el => 
+    const items = objFeed.map(el =>
       `<a href="${el.link}" class="list-group-item list-group-item-action">
         ${el.title}
         <span class="float-right">
@@ -95,7 +94,7 @@ export default class Rss {
           </button>
         </span>
       </a>`).join('');
-      
+
     return `<div class="list-group" id="list">
               <a href="${feedLink || '#'}" class="list-group-item list-group-item-action active">
               ${feedName || 'Unknown feed'}</a>${items}</div>`;

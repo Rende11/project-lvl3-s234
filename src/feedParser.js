@@ -1,6 +1,6 @@
 import uuid from 'uuid/v1';
 
-export const handlingDoc = (doc) => {
+export default (doc) => {
   const feedName = doc.querySelector('title');
   const feedLink = doc.querySelector('link');
   const newsItems = [...doc.querySelectorAll('item')];
@@ -19,4 +19,4 @@ export const handlingDoc = (doc) => {
       } : null;
   }).filter(item => !!item);
   return preparedNews;
-}
+};

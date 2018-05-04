@@ -1,5 +1,4 @@
-export default () => {
-  return `<div id="form">
+export default () => `<div id="form">
     <form id="feed-form">
       <div class="input-group mb-3">
         <input type="text" id="link" name="linkInput" class="form-control"
@@ -17,4 +16,3 @@ export default () => {
     </form>
     <div id="rss-list">
   </div>`;
-}
