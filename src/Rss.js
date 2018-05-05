@@ -41,7 +41,7 @@ export default class Rss {
 
   getFeedByUrl = url => _.find(this.newsFeed, f => f.url === url);
 
-  getAndParseFeed = url => axios.get(url)
+  getAndParseFeed = url => axios.get(`${this.proxy}${url}`)
     .then((data) => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(data.data, 'application/xml');
