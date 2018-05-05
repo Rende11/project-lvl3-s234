@@ -20,6 +20,9 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: 'template.html',
+      $: 'jquery',
+      jQuery: 'jquery',
+      Popper: 'popper.js',
     }),
   ],
 };

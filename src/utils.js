@@ -1,3 +1,5 @@
+// @flow
+
 const stateChanger = {
   failed: (el, message) => {
     el.classList.add('is-invalid');
@@ -14,4 +16,6 @@ const stateChanger = {
     el.classList.remove('is-valid');
   },
 };
-export default stateChanger;
+
+
+export default { stateChanger };

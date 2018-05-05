@@ -5,7 +5,7 @@ import validator from 'validator';
 import $ from 'jquery';
 
 import { getModal, getForm } from './templates';
-import stateChanger from './utils';
+import { stateChanger } from './utils';
 import handlingDoc from './feedParser';
 
 export default class Rss {
@@ -13,8 +13,40 @@ export default class Rss {
     this.proxy = 'https://cors-anywhere.herokuapp.com';
     this.element = element;
     this.newsFeed = [];
+    this.isUpdaterStarted = false;
   }
 
+  updateFeeds = () => {
+    const rssLinks = this.newsFeed.map(({ url }) => url);
+    Promise.all(this.newsFeed.map(({ url }) => this.getAndParseFeed(url)))
+      .then((newFeedsData) => {
+        const newFeedsWithUrls = newFeedsData
+          .map((news, index) => ({ url: rssLinks[index], news }));
+        const data = newFeedsWithUrls
+          .map(feed => this.getNewArticles(feed.news, this.getFeedByUrl(feed.url).news || []));
+        const newArticles = data.map((news, index) => ({ url: rssLinks[index], news }));
+        const rssForUpdate = newArticles.filter(feed => feed.news.length !== 0);
+        if (rssForUpdate.length > 0) {
+          rssForUpdate.forEach((feed) => {
+            const oldFeedState = this.getFeedByUrl(feed.url);
+            oldFeedState.news = [...feed.news, ...oldFeedState.news];
+          });
+          const isModalOpen = document.getElementById('exampleModal').classList.contains('show');
+          if (!isModalOpen) {
+            this.drawRsslist();
+          }
+        }
+      });
+  }
+
+  getFeedByUrl = url => _.find(this.newsFeed, f => f.url === url);
+
+  getAndParseFeed = url => axios.get(url)
+    .then((data) => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data.data, 'application/xml');
+      return handlingDoc(doc);
+    })
 
   handleOnSubmit = (e) => {
     e.preventDefault();
@@ -25,14 +57,10 @@ export default class Rss {
       stateChanger.failed(input, 'Validation error - empty input, invalid or already used url');
     } else {
       stateChanger.success(input, 'Looks good - wait for download');
-      axios.get(`${this.proxy}/${linkInput}`)
-        .then((data) => {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(data.data, 'application/xml');
-          const parsedNews = handlingDoc(doc);
-
+      this.getAndParseFeed(linkInput)
+        .then((parsedNews) => {
           if (parsedNews.length === 0) {
-            stateChanger.failed(input, "Can't parse news from this url");
+            throw new Error('Parse error');
           } else {
             this.newsFeed.push({
               url: linkInput,
@@ -44,9 +72,19 @@ export default class Rss {
             stateChanger.neutral(input);
           }
         })
+        .then(() => {
+          if (!this.isUpdaterStarted) {
+            this.isUpdaterStarted = true;
+            setInterval(this.updateFeeds, 5000);
+          }
+        })
         .catch((err) => {
           console.error(err);
-          stateChanger.failed(input, 'Request failed');
+          if (err.message === 'Parse error') {
+            stateChanger.failed(input, "Can't parse news from this url");
+          } else {
+            stateChanger.failed(input, 'Request failed');
+          }
         });
     }
   }
@@ -89,7 +127,8 @@ export default class Rss {
       `<a href="${el.link}" class="list-group-item list-group-item-action">
         ${el.title}
         <span class="float-right">
-          <button type="button" class="btn btn-outline-secondary" data-article-id="${el.id}" data-toggle="modal" data-target="#exampleModal">
+          <button type="button" class="btn btn-outline-secondary" data-article-id="${el.id}"
+            data-toggle="modal" data-target="#exampleModal">
             Show description
           </button>
         </span>
@@ -104,4 +143,9 @@ export default class Rss {
     const usedUrls = this.newsFeed.map(feed => feed.url);
     return (url.includes('localhost') || (validator.isURL(url) && !usedUrls.includes(url)));
   }
+
+  isEqualsArticles = (first, second) =>
+    (first.title === second.title && first.link === second.link && first.desc === second.desc)
+
+  getNewArticles = (first, second) => _.differenceWith(first, second, this.isEqualsArticles);
 }
