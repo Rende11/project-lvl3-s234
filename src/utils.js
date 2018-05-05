@@ -18,4 +18,4 @@ const stateChanger = {
 };
 
 
-export default { stateChanger };
+export default stateChanger;

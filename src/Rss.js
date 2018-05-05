@@ -5,12 +5,12 @@ import validator from 'validator';
 import $ from 'jquery';
 
 import { getModal, getForm } from './templates';
-import { stateChanger } from './utils';
+import  stateChanger  from './utils';
 import handlingDoc from './feedParser';
 
 export default class Rss {
   constructor(element) {
-    this.proxy = 'https://cors-anywhere.herokuapp.com';
+    this.proxy = 'https://cors-anywhere.herokuapp.com/';
     this.element = element;
     this.newsFeed = [];
     this.isUpdaterStarted = false;
