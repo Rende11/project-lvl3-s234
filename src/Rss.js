@@ -5,7 +5,7 @@ import validator from 'validator';
 import $ from 'jquery';
 
 import { getModal, getForm } from './templates';
-import  stateChanger  from './utils';
+import stateChanger from './utils';
 import handlingDoc from './feedParser';
 
 export default class Rss {
@@ -13,12 +13,11 @@ export default class Rss {
     this.proxy = 'https://cors-anywhere.herokuapp.com/';
     this.element = element;
     this.newsFeed = [];
-    this.isUpdaterStarted = false;
   }
 
   updateFeeds = () => {
     const rssLinks = this.newsFeed.map(({ url }) => url);
-    Promise.all(this.newsFeed.map(({ url }) => this.getAndParseFeed(url)))
+    return Promise.all(this.newsFeed.map(({ url }) => this.getAndParseFeed(url)))
       .then((newFeedsData) => {
         const newFeedsWithUrls = newFeedsData
           .map((news, index) => ({ url: rssLinks[index], news }));
@@ -72,12 +71,6 @@ export default class Rss {
             stateChanger.neutral(input);
           }
         })
-        .then(() => {
-          if (!this.isUpdaterStarted) {
-            this.isUpdaterStarted = true;
-            setInterval(this.updateFeeds, 5000);
-          }
-        })
         .catch((err) => {
           console.error(err);
           if (err.message === 'Parse error') {
@@ -90,11 +83,23 @@ export default class Rss {
   }
 
   getNewsById = id => _.find(_.flatten(this.newsFeed.map(feed => feed.news)), { id });
-
+  runUpdater = () => {
+    if (this.newsFeed.length > 0) {
+      this.updateFeeds()
+        .then(() => setTimeout(this.runUpdater, 5000))
+        .catch((err) => {
+          console.error(err);
+          setTimeout(this.runUpdater, 30000);
+        });
+    } else {
+      setTimeout(this.runUpdater, 5000);
+    }
+  };
   init() {
     this.element.innerHTML = getForm();
     const form = document.getElementById('feed-form');
     form.addEventListener('submit', this.handleOnSubmit);
+    this.runUpdater();
   }
 
   drawRsslist() {
